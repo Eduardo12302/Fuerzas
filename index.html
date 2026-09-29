@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Fuerzas</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#111827;color:#f3f4f6}
+.container{max-width:900px;margin:auto;padding:20px}
+h1{text-align:center;margin-bottom:20px}
+.tabs{display:flex;gap:8px;margin-bottom:18px}
+.tab{flex:1;padding:14px;border:0;border-radius:10px;background:#374151;color:white;font-weight:bold;cursor:pointer}
+.tab.active{background:#2563eb}
+.panel{display:none;background:#1f2937;padding:20px;border-radius:14px}
+.panel.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+label{display:block;margin-bottom:6px;font-weight:bold}
+input,select{width:100%;padding:12px;border-radius:8px;border:1px solid #4b5563;background:#111827;color:white;font-size:16px}
+button.calc{margin-top:18px;width:100%;padding:13px;border:0;border-radius:9px;background:#2563eb;color:white;font-size:16px;font-weight:bold;cursor:pointer}
+.result{margin-top:18px;padding:16px;background:#111827;border-radius:10px}
+.result p{margin:9px 0}
+.fuerza{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.error{color:#fca5a5;margin-top:10px}
+@media(max-width:600px){
+ .container{padding:12px}
+ .grid{grid-template-columns:1fr}
+ .tabs{flex-direction:column}
+ .fuerza{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Calculadora de Fuerzas</h1>
+
+<div class="tabs">
+<button class="tab active" onclick="mostrar('paralelas',this)">Fuerzas Paralelas</button>
+<button class="tab" onclick="mostrar('concurrentes',this)">Fuerzas Concurrentes</button>
+</div>
+
+<section id="paralelas" class="panel active">
+<h2>Fuerzas Paralelas</h2>
+<div class="grid">
+<div><label>F1 (N)</label><input id="f1" type="number" step="any"></div>
+<div><label>F2 (N)</label><input id="f2" type="number" step="any"></div>
+<div><label>Distancia (m)</label><input id="dist" type="number" step="any"></div>
+<div><label>Sentido</label>
+<select id="sentido">
+<option>Mismo sentido</option>
+<option>Sentidos contrarios</option>
+</select></div>
+</div>
+<button class="calc" onclick="calcularParalelas()">CALCULAR</button>
+<div class="result">
+<p><b>FR:</b> <span id="frp">---</span></p>
+<p><b>AC:</b> <span id="ac">---</span></p>
+<p><b>BC:</b> <span id="bc">---</span></p>
+<p id="errorP" class="error"></p>
+</div>
+</section>
+
+<section id="concurrentes" class="panel">
+<h2>Fuerzas Concurrentes</h2>
+<label>Número de fuerzas</label>
+<input id="numero" type="number" min="1" value="2">
+<button class="calc" onclick="crearFuerzas()">CREAR FUERZAS</button>
+<div id="lista" style="margin-top:18px"></div>
+<button class="calc" onclick="calcularConcurrentes()">CALCULAR RESULTANTE</button>
+<div class="result">
+<p><b>FR:</b> <span id="frc">---</span></p>
+<p><b>Dirección:</b> <span id="direccion">---</span></p>
+<p><b>Cuadrante / sentido:</b> <span id="cuadrante">---</span></p>
+<p id="errorC" class="error"></p>
+</div>
+</section>
+</div>
+
+<script>
+function mostrar(id,boton){
+ document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+ boton.classList.add('active');
+}
+
+function calcularParalelas(){
+ const f1=Number(document.getElementById('f1').value);
+ const f2=Number(document.getElementById('f2').value);
+ const d=Number(document.getElementById('dist').value);
+ const sentido=document.getElementById('sentido').value;
+ const error=document.getElementById('errorP');
+ error.textContent='';
+
+ if(f1<=0||f2<=0||d<=0||!Number.isFinite(f1)||!Number.isFinite(f2)||!Number.isFinite(d)){
+   error.textContent='Ingresa valores mayores que cero.';
+   return;
+ }
+
+ let fr,ac,bc;
+
+ if(sentido==='Mismo sentido'){
+   fr=f1+f2;
+   ac=(f2*d)/fr;
+   bc=(f1*d)/fr;
+ }else{
+   if(f1===f2){
+     error.textContent='Con fuerzas iguales y sentidos contrarios, FR = 0 N.';
+     document.getElementById('frp').textContent='0.00 N';
+     document.getElementById('ac').textContent='---';
+     document.getElementById('bc').textContent='---';
+     return;
+   }
+   fr=Math.abs(f1-f2);
+   ac=Math.abs((f2*d)/(f1-f2));
+   bc=Math.abs(ac-d);
+ }
+
+ document.getElementById('frp').textContent=fr.toFixed(2)+' N';
+ document.getElementById('ac').textContent=ac.toFixed(2)+' m';
+ document.getElementById('bc').textContent=bc.toFixed(2)+' m';
+}
+
+function crearFuerzas(){
+ const n=parseInt(document.getElementById('numero').value);
+ const lista=document.getElementById('lista');
+ lista.innerHTML='';
+
+ if(!Number.isInteger(n)||n<1){
+   document.getElementById('errorC').textContent='Ingresa un número válido de fuerzas.';
+   return;
+ }
+ document.getElementById('errorC').textContent='';
+
+ for(let i=1;i<=n;i++){
+   const div=document.createElement('div');
+   div.className='fuerza';
+   div.innerHTML=`
+     <div><label>F${i} Magnitud (N)</label>
+     <input class="magnitud" type="number" step="any"></div>
+     <div><label>F${i} Dirección (°)</label>
+     <input class="angulo" type="number" step="any"></div>`;
+   lista.appendChild(div);
+ }
+}
+
+function calcularConcurrentes(){
+ const mags=document.querySelectorAll('.magnitud');
+ const angs=document.querySelectorAll('.angulo');
+ const error=document.getElementById('errorC');
+ error.textContent='';
+
+ if(mags.length===0){
+   error.textContent='Primero crea las fuerzas.';
+   return;
+ }
+
+ let rx=0,ry=0;
+
+ for(let i=0;i<mags.length;i++){
+   const f=Number(mags[i].value);
+   const a=Number(angs[i].value);
+
+   if(!Number.isFinite(f)||!Number.isFinite(a)||f<0){
+     error.textContent='Revisa los valores. Las magnitudes no pueden ser negativas.';
+     return;
+   }
+
+   const rad=a*Math.PI/180;
+   rx+=f*Math.cos(rad);
+   ry+=f*Math.sin(rad);
+ }
+
+ const fr=Math.sqrt(rx*rx+ry*ry);
+
+ if(fr<1e-10){
+   document.getElementById('frc').textContent='0.00 N';
+   document.getElementById('direccion').textContent='Indefinida';
+   document.getElementById('cuadrante').textContent='Sin sentido';
+   return;
+ }
+
+ let ang=Math.atan2(ry,rx)*180/Math.PI;
+ if(ang<0) ang+=360;
+
+ let cuadrante;
+ if(rx>0&&ry>0) cuadrante='I - (+X, +Y)';
+ else if(rx<0&&ry>0) cuadrante='II - (-X, +Y)';
+ else if(rx<0&&ry<0) cuadrante='III - (-X, -Y)';
+ else if(rx>0&&ry<0) cuadrante='IV - (+X, -Y)';
+ else if(rx>0) cuadrante='Eje +X';
+ else if(rx<0) cuadrante='Eje -X';
+ else if(ry>0) cuadrante='Eje +Y';
+ else cuadrante='Eje -Y';
+
+ document.getElementById('frc').textContent=fr.toFixed(2)+' N';
+ document.getElementById('direccion').textContent=ang.toFixed(2)+'°';
+ document.getElementById('cuadrante').textContent=cuadrante;
+}
+
+crearFuerzas();
+</script>
+</body>
+</html>
